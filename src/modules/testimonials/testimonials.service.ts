@@ -26,7 +26,59 @@ export class TestimonialsService {
     return this.updateStatus(userId, testimonialId, 'rejected');
   }
 
-  public async listAcceptedByUsername(username: string) {
+  public async listAcceptedByUsername(
+    username: string,
+    cursor?: string,
+    requestedLimit = 10,
+  ) {
+    const limit = Math.min(Math.max(requestedLimit, 1), 20);
+    const [itemsRaw, totalCount] = await Promise.all([
+      this.prismaService.testimonial.findMany({
+        where: {
+          status: 'accepted',
+          toUser: {
+            username,
+          },
+        },
+        include: {
+          fromUser: {
+            select: {
+              username: true,
+              profile: {
+                select: {
+                  name: true,
+                  avatarUrl: true,
+                },
+              },
+            },
+          },
+        },
+        orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
+        take: limit + 1,
+        cursor: cursor ? { id: cursor } : undefined,
+        skip: cursor ? 1 : 0,
+      }),
+      this.prismaService.testimonial.count({
+        where: {
+          status: 'accepted',
+          toUser: {
+            username,
+          },
+        },
+      }),
+    ]);
+    const hasMore = itemsRaw.length > limit;
+    const items = hasMore ? itemsRaw.slice(0, limit) : itemsRaw;
+    const nextCursor = hasMore ? (items[items.length - 1]?.id ?? null) : null;
+    return {
+      items,
+      hasMore,
+      nextCursor,
+      totalCount,
+    };
+  }
+
+  public async listAcceptedSimpleByUsername(username: string) {
     return this.prismaService.testimonial.findMany({
       where: {
         status: 'accepted',

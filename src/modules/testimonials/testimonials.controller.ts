@@ -5,6 +5,7 @@ import {
   Param,
   Patch,
   Post,
+  Query,
   Req,
   UseGuards,
 } from '@nestjs/common';
@@ -28,8 +29,18 @@ export class TestimonialsController {
   }
 
   @Get('profiles/:username/testimonials')
-  public listAcceptedByUsername(@Param('username') username: string) {
-    return this.testimonialsService.listAcceptedByUsername(username);
+  public listAcceptedByUsername(
+    @Param('username') username: string,
+    @Query('cursor') cursor?: string,
+    @Query('limit') limitRaw?: string,
+  ) {
+    const parsedLimit = Number.parseInt(limitRaw ?? '10', 10);
+    const limit = Number.isNaN(parsedLimit) ? 10 : parsedLimit;
+    return this.testimonialsService.listAcceptedByUsername(
+      username,
+      cursor,
+      limit,
+    );
   }
 
   @Patch('testimonials/:id/accept')
