@@ -1,12 +1,19 @@
 import {
   IsOptional,
   IsString,
-  IsUrl,
+  Matches,
   MaxLength,
   MinLength,
 } from 'class-validator';
 
 export class UpdateProfileDto {
+  @IsOptional()
+  @IsString()
+  @MinLength(3)
+  @MaxLength(30)
+  @Matches(/^[a-z0-9_-]+$/)
+  public username?: string;
+
   @IsString()
   @MinLength(2)
   @MaxLength(80)
@@ -22,26 +29,32 @@ export class UpdateProfileDto {
   public avatarUrl?: string;
 
   @IsOptional()
-  @IsUrl()
+  @IsString()
+  @Matches(/^@[a-z0-9._-]{1,30}$/i)
   public instagramUrl?: string;
 
   @IsOptional()
-  @IsUrl()
+  @IsString()
+  @Matches(/^@[a-z0-9._-]{1,30}$/i)
   public facebookUrl?: string;
 
   @IsOptional()
-  @IsUrl()
+  @IsString()
+  @Matches(/^@[a-z0-9._-]{1,30}$/i)
   public youtubeUrl?: string;
 
   @IsOptional()
-  @IsUrl()
+  @IsString()
+  @Matches(/^@[a-z0-9._-]{1,30}$/i)
   public xUrl?: string;
 
   @IsOptional()
-  @IsUrl()
+  @IsString()
+  @Matches(/^@[a-z0-9._-]{1,30}$/i)
   public twitchUrl?: string;
 
   @IsOptional()
-  @IsUrl()
+  @IsString()
+  @Matches(/^@[a-z0-9._-]{1,30}$/i)
   public kickUrl?: string;
 }

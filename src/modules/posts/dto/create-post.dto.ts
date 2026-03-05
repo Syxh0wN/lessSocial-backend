@@ -40,8 +40,9 @@ export class CreatePostDto {
   @MaxLength(500)
   public caption?: string;
 
+  @IsOptional()
   @IsIn(['public', 'friends', 'private'])
-  public visibility!: 'public' | 'friends' | 'private';
+  public visibility?: 'public' | 'friends' | 'private';
 
   @IsArray()
   @ArrayMinSize(1)

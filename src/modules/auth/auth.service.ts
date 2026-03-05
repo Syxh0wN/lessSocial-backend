@@ -11,6 +11,14 @@ export class AuthService {
   ) {}
 
   public async loginWithGoogle(payload: AuthGoogleDto) {
+    const existingUser = await this.prismaService.user.findUnique({
+      where: {
+        email: payload.email,
+      },
+      select: {
+        id: true,
+      },
+    });
     const user = await this.prismaService.user.upsert({
       where: { email: payload.email },
       create: {
@@ -25,7 +33,6 @@ export class AuthService {
         },
       },
       update: {
-        username: payload.username,
         profile: {
           update: {
             name: payload.name,
@@ -34,7 +41,11 @@ export class AuthService {
         },
       },
     });
-    return this.buildTokens(user.id, user.email, user.username);
+    const tokens = await this.buildTokens(user.id, user.email, user.username);
+    return {
+      ...tokens,
+      isNewUser: !existingUser,
+    };
   }
 
   public async refresh(refreshToken: string) {

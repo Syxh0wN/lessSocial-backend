@@ -1,4 +1,8 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { CreateFriendRequestDto } from './dto/create-friend-request.dto';
 import { UpdateFriendRequestDto } from './dto/update-friend-request.dto';
@@ -8,22 +12,59 @@ export class FriendsService {
   public constructor(private readonly prismaService: PrismaService) {}
 
   public async request(userId: string, dto: CreateFriendRequestDto) {
-    return this.prismaService.friendRequest.upsert({
+    if (userId === dto.toUserId) {
+      throw new BadRequestException('Cannot follow yourself');
+    }
+    const existingFriendship = await this.prismaService.friendship.findFirst({
+      where: {
+        OR: [
+          {
+            userAId: userId,
+            userBId: dto.toUserId,
+          },
+          {
+            userAId: dto.toUserId,
+            userBId: userId,
+          },
+        ],
+      },
+    });
+    if (existingFriendship) {
+      return {
+        id: existingFriendship.id,
+        fromUserId: userId,
+        toUserId: dto.toUserId,
+        status: 'accepted' as const,
+      };
+    }
+    const existingRequest = await this.prismaService.friendRequest.findUnique({
       where: {
         fromUserId_toUserId: {
           fromUserId: userId,
           toUserId: dto.toUserId,
         },
       },
-      create: {
-        fromUserId: userId,
-        toUserId: dto.toUserId,
-        status: 'pending',
-      },
-      update: {
-        status: 'pending',
-      },
     });
+    if (!existingRequest) {
+      return this.prismaService.friendRequest.create({
+        data: {
+          fromUserId: userId,
+          toUserId: dto.toUserId,
+          status: 'pending',
+        },
+      });
+    }
+    if (existingRequest.status === 'rejected') {
+      return this.prismaService.friendRequest.update({
+        where: {
+          id: existingRequest.id,
+        },
+        data: {
+          status: 'pending',
+        },
+      });
+    }
+    return existingRequest;
   }
 
   public async updateRequest(

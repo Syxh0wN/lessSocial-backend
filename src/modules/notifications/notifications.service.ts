@@ -3,7 +3,12 @@ import { PrismaService } from '../../prisma/prisma.service';
 
 type NotificationItem = {
   id: string;
-  type: 'postLike' | 'postComment' | 'friendRequest' | 'testimonial';
+  type:
+    | 'postLike'
+    | 'postComment'
+    | 'friendRequest'
+    | 'testimonial'
+    | 'mention';
   createdAt: string;
   actorUsername: string;
   message: string;
@@ -15,94 +20,119 @@ export class NotificationsService {
   public constructor(private readonly prismaService: PrismaService) {}
 
   public async listForUser(userId: string) {
-    const [likes, comments, requests, testimonials] = await Promise.all([
-      this.prismaService.postLike.findMany({
-        where: {
-          post: {
-            userId,
-          },
-          userId: {
-            not: userId,
-          },
-        },
-        include: {
-          user: {
-            select: {
-              username: true,
+    const [likes, comments, requests, testimonials, mentions] =
+      await Promise.all([
+        this.prismaService.postLike.findMany({
+          where: {
+            post: {
+              userId,
+            },
+            userId: {
+              not: userId,
             },
           },
-          post: {
-            select: {
-              id: true,
+          include: {
+            user: {
+              select: {
+                username: true,
+              },
+            },
+            post: {
+              select: {
+                id: true,
+              },
             },
           },
-        },
-        take: 20,
-        orderBy: {
-          createdAt: 'desc',
-        },
-      }),
-      this.prismaService.comment.findMany({
-        where: {
-          post: {
-            userId,
+          take: 20,
+          orderBy: {
+            createdAt: 'desc',
           },
-          userId: {
-            not: userId,
-          },
-        },
-        include: {
-          user: {
-            select: {
-              username: true,
+        }),
+        this.prismaService.comment.findMany({
+          where: {
+            post: {
+              userId,
+            },
+            userId: {
+              not: userId,
             },
           },
-          post: {
-            select: {
-              id: true,
+          include: {
+            user: {
+              select: {
+                username: true,
+              },
+            },
+            post: {
+              select: {
+                id: true,
+              },
             },
           },
-        },
-        take: 20,
-        orderBy: {
-          createdAt: 'desc',
-        },
-      }),
-      this.prismaService.friendRequest.findMany({
-        where: {
-          toUserId: userId,
-          status: 'pending',
-        },
-        include: {
-          fromUser: {
-            select: {
-              username: true,
+          take: 20,
+          orderBy: {
+            createdAt: 'desc',
+          },
+        }),
+        this.prismaService.friendRequest.findMany({
+          where: {
+            toUserId: userId,
+            status: 'pending',
+          },
+          include: {
+            fromUser: {
+              select: {
+                username: true,
+              },
             },
           },
-        },
-        take: 20,
-        orderBy: {
-          createdAt: 'desc',
-        },
-      }),
-      this.prismaService.testimonial.findMany({
-        where: {
-          toUserId: userId,
-          status: 'pending',
-        },
-        include: {
-          fromUser: {
-            select: {
-              username: true,
+          take: 20,
+          orderBy: {
+            createdAt: 'desc',
+          },
+        }),
+        this.prismaService.testimonial.findMany({
+          where: {
+            toUserId: userId,
+            status: 'pending',
+          },
+          include: {
+            fromUser: {
+              select: {
+                username: true,
+              },
             },
           },
-        },
-        take: 20,
-        orderBy: {
-          createdAt: 'desc',
-        },
-      }),
-    ]);
+          take: 20,
+          orderBy: {
+            createdAt: 'desc',
+          },
+        }),
+        this.prismaService.mentionNotification.findMany({
+          where: {
+            mentionedUserId: userId,
+            actorUserId: {
+              not: userId,
+            },
+          },
+          include: {
+            actorUser: {
+              select: {
+                username: true,
+              },
+            },
+            comment: {
+              select: {
+                postId: true,
+              },
+            },
+          },
+          take: 20,
+          orderBy: {
+            createdAt: 'desc',
+          },
+        }),
+      ]);
 
     const notifications: NotificationItem[] = [
       ...likes.map((likeItem) => ({
@@ -134,6 +164,18 @@ export class NotificationsService {
         createdAt: testimonialItem.createdAt.toISOString(),
         actorUsername: testimonialItem.fromUser.username,
         message: 'enviou um depoimento para voce',
+      })),
+      ...mentions.map((mentionItem) => ({
+        id: `mention_${mentionItem.id}`,
+        type: 'mention' as const,
+        createdAt: mentionItem.createdAt.toISOString(),
+        actorUsername: mentionItem.actorUser.username,
+        message:
+          mentionItem.sourceType === 'profileBio'
+            ? 'mencionou voce na bio'
+            : 'mencionou voce em uma publicacao',
+        targetId:
+          mentionItem.postId ?? mentionItem.comment?.postId ?? undefined,
       })),
     ]
       .sort(
