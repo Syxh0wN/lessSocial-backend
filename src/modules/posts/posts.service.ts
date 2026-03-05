@@ -58,6 +58,74 @@ export class PostsService {
     });
   }
 
+  public async findById(postId: string) {
+    const post = await this.prismaService.post.findUnique({
+      where: { id: postId },
+      include: {
+        user: {
+          select: {
+            username: true,
+            profile: {
+              select: {
+                name: true,
+                bio: true,
+                avatarUrl: true,
+              },
+            },
+          },
+        },
+        media: true,
+        likes: {
+          include: {
+            user: {
+              select: {
+                username: true,
+              },
+            },
+          },
+        },
+        comments: {
+          where: {
+            parentCommentId: null,
+          },
+          include: {
+            user: {
+              select: {
+                username: true,
+                profile: {
+                  select: {
+                    avatarUrl: true,
+                  },
+                },
+              },
+            },
+            likes: true,
+            replies: {
+              include: {
+                user: {
+                  select: {
+                    username: true,
+                  },
+                },
+                likes: true,
+              },
+              orderBy: {
+                createdAt: 'asc',
+              },
+            },
+          },
+          orderBy: {
+            createdAt: 'desc',
+          },
+        },
+      },
+    });
+    if (!post) {
+      throw new NotFoundException('Post not found');
+    }
+    return post;
+  }
+
   public async like(postId: string, userId: string) {
     await this.findPost(postId);
     return this.prismaService.postLike.upsert({

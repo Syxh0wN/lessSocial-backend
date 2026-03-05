@@ -31,6 +31,11 @@ export class PostsController {
     return this.postsService.findByUsername(username);
   }
 
+  @Get('posts/:id')
+  public getPostById(@Param('id') id: string) {
+    return this.postsService.findById(id);
+  }
+
   @Post('posts/:id/likes')
   @UseGuards(JwtAuthGuard)
   public likePost(
