@@ -1,4 +1,4 @@
-import { Controller, Get, Req, UseGuards } from '@nestjs/common';
+import { Controller, Get, Query, Req, UseGuards } from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { FeedService } from './feed.service';
 
@@ -8,7 +8,13 @@ export class FeedController {
 
   @Get('feed')
   @UseGuards(JwtAuthGuard)
-  public feed(@Req() req: { user: { sub: string } }) {
-    return this.feedService.list(req.user.sub);
+  public feed(
+    @Req() req: { user: { sub: string } },
+    @Query('cursor') cursor?: string,
+    @Query('limit') limitRaw?: string,
+  ) {
+    const parsedLimit = Number.parseInt(limitRaw ?? '10', 10);
+    const limit = Number.isNaN(parsedLimit) ? 10 : parsedLimit;
+    return this.feedService.list(req.user.sub, cursor, limit);
   }
 }
