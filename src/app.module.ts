@@ -11,6 +11,7 @@ import { FriendsModule } from './modules/friends/friends.module';
 import { TestimonialsModule } from './modules/testimonials/testimonials.module';
 import { AlbumsModule } from './modules/albums/albums.module';
 import { FeedModule } from './modules/feed/feed.module';
+import { NotificationsModule } from './modules/notifications/notifications.module';
 
 @Module({
   imports: [
@@ -30,6 +31,7 @@ import { FeedModule } from './modules/feed/feed.module';
     TestimonialsModule,
     AlbumsModule,
     FeedModule,
+    NotificationsModule,
   ],
   controllers: [HealthController],
   providers: [
