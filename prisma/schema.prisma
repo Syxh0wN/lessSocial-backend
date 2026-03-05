@@ -1,0 +1,170 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id               String          @id @default(uuid())
+  email            String          @unique
+  username         String          @unique
+  provider         String
+  createdAt        DateTime        @default(now())
+  profile          Profile?
+  posts            Post[]
+  comments         Comment[]
+  postLikes        PostLike[]
+  commentLikes     CommentLike[]
+  sentRequests     FriendRequest[] @relation("SentRequests")
+  receivedRequests FriendRequest[] @relation("ReceivedRequests")
+  friendshipsA     Friendship[]    @relation("FriendshipA")
+  friendshipsB     Friendship[]    @relation("FriendshipB")
+  testimonialsFrom Testimonial[]   @relation("TestimonialsFrom")
+  testimonialsTo   Testimonial[]   @relation("TestimonialsTo")
+  albums           Album[]
+}
+
+model Profile {
+  id        String   @id @default(uuid())
+  userId    String   @unique
+  name      String
+  bio       String?
+  avatarUrl String?
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Post {
+  id         String      @id @default(uuid())
+  userId     String
+  caption    String?
+  visibility PostScope   @default(public)
+  createdAt  DateTime    @default(now())
+  user       User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  media      MediaAsset[]
+  likes      PostLike[]
+  comments   Comment[]
+}
+
+model MediaAsset {
+  id       String    @id @default(uuid())
+  postId   String
+  type     MediaType
+  url      String
+  width    Int?
+  height   Int?
+  duration Float?
+  post     Post      @relation(fields: [postId], references: [id], onDelete: Cascade)
+}
+
+model PostLike {
+  id      String @id @default(uuid())
+  userId  String
+  postId  String
+  user    User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  post    Post   @relation(fields: [postId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, postId])
+}
+
+model Comment {
+  id              String        @id @default(uuid())
+  postId          String
+  userId          String
+  parentCommentId String?
+  content         String
+  createdAt       DateTime      @default(now())
+  post            Post          @relation(fields: [postId], references: [id], onDelete: Cascade)
+  user            User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  parent          Comment?      @relation("CommentReplies", fields: [parentCommentId], references: [id], onDelete: Cascade)
+  replies         Comment[]     @relation("CommentReplies")
+  likes           CommentLike[]
+}
+
+model CommentLike {
+  id        String  @id @default(uuid())
+  userId    String
+  commentId String
+  user      User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  comment   Comment @relation(fields: [commentId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, commentId])
+}
+
+model FriendRequest {
+  id         String              @id @default(uuid())
+  fromUserId String
+  toUserId   String
+  status     FriendRequestStatus @default(pending)
+  createdAt  DateTime            @default(now())
+  fromUser   User                @relation("SentRequests", fields: [fromUserId], references: [id], onDelete: Cascade)
+  toUser     User                @relation("ReceivedRequests", fields: [toUserId], references: [id], onDelete: Cascade)
+
+  @@unique([fromUserId, toUserId])
+}
+
+model Friendship {
+  id      String @id @default(uuid())
+  userAId String
+  userBId String
+  userA   User   @relation("FriendshipA", fields: [userAId], references: [id], onDelete: Cascade)
+  userB   User   @relation("FriendshipB", fields: [userBId], references: [id], onDelete: Cascade)
+
+  @@unique([userAId, userBId])
+}
+
+model Testimonial {
+  id         String            @id @default(uuid())
+  fromUserId String
+  toUserId   String
+  content    String
+  status     TestimonialStatus @default(pending)
+  createdAt  DateTime          @default(now())
+  fromUser   User              @relation("TestimonialsFrom", fields: [fromUserId], references: [id], onDelete: Cascade)
+  toUser     User              @relation("TestimonialsTo", fields: [toUserId], references: [id], onDelete: Cascade)
+}
+
+model Album {
+  id        String      @id @default(uuid())
+  userId    String
+  name      String
+  createdAt DateTime    @default(now())
+  user      User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  items     AlbumItem[]
+}
+
+model AlbumItem {
+  id        String    @id @default(uuid())
+  albumId   String
+  mediaUrl  String
+  mediaType MediaType
+  duration  Float?
+  caption   String?
+  createdAt DateTime  @default(now())
+  album     Album     @relation(fields: [albumId], references: [id], onDelete: Cascade)
+}
+
+enum MediaType {
+  image
+  video
+}
+
+enum PostScope {
+  public
+  friends
+  private
+}
+
+enum FriendRequestStatus {
+  pending
+  accepted
+  rejected
+}
+
+enum TestimonialStatus {
+  pending
+  accepted
+  rejected
+}
