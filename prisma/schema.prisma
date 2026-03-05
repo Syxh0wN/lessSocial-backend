@@ -28,12 +28,18 @@ model User {
 }
 
 model Profile {
-  id        String   @id @default(uuid())
-  userId    String   @unique
-  name      String
-  bio       String?
-  avatarUrl String?
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id           String   @id @default(uuid())
+  userId       String   @unique
+  name         String
+  bio          String?
+  avatarUrl    String?
+  instagramUrl String?
+  facebookUrl  String?
+  youtubeUrl   String?
+  xUrl         String?
+  twitchUrl    String?
+  kickUrl      String?
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 model Post {

@@ -33,6 +33,12 @@ export class ProfilesService {
         name: dto.name,
         bio: dto.bio,
         avatarUrl: dto.avatarUrl,
+        instagramUrl: dto.instagramUrl,
+        facebookUrl: dto.facebookUrl,
+        youtubeUrl: dto.youtubeUrl,
+        xUrl: dto.xUrl,
+        twitchUrl: dto.twitchUrl,
+        kickUrl: dto.kickUrl,
       },
     });
   }
