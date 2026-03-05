@@ -1,6 +1,7 @@
 import {
   Body,
   Controller,
+  Get,
   Param,
   Patch,
   Post,
@@ -11,13 +12,13 @@ import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { CreateTestimonialDto } from './dto/create-testimonial.dto';
 import { TestimonialsService } from './testimonials.service';
 
-@Controller('testimonials')
+@Controller()
 export class TestimonialsController {
   public constructor(
     private readonly testimonialsService: TestimonialsService,
   ) {}
 
-  @Post()
+  @Post('testimonials')
   @UseGuards(JwtAuthGuard)
   public create(
     @Req() req: { user: { sub: string } },
@@ -26,7 +27,12 @@ export class TestimonialsController {
     return this.testimonialsService.create(req.user.sub, body);
   }
 
-  @Patch(':id/accept')
+  @Get('profiles/:username/testimonials')
+  public listAcceptedByUsername(@Param('username') username: string) {
+    return this.testimonialsService.listAcceptedByUsername(username);
+  }
+
+  @Patch('testimonials/:id/accept')
   @UseGuards(JwtAuthGuard)
   public accept(
     @Req() req: { user: { sub: string } },
@@ -35,7 +41,7 @@ export class TestimonialsController {
     return this.testimonialsService.accept(req.user.sub, id);
   }
 
-  @Patch(':id/reject')
+  @Patch('testimonials/:id/reject')
   @UseGuards(JwtAuthGuard)
   public reject(
     @Req() req: { user: { sub: string } },

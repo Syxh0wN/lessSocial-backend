@@ -26,6 +26,33 @@ export class TestimonialsService {
     return this.updateStatus(userId, testimonialId, 'rejected');
   }
 
+  public async listAcceptedByUsername(username: string) {
+    return this.prismaService.testimonial.findMany({
+      where: {
+        status: 'accepted',
+        toUser: {
+          username,
+        },
+      },
+      include: {
+        fromUser: {
+          select: {
+            username: true,
+            profile: {
+              select: {
+                name: true,
+                avatarUrl: true,
+              },
+            },
+          },
+        },
+      },
+      orderBy: {
+        createdAt: 'desc',
+      },
+    });
+  }
+
   private async updateStatus(
     userId: string,
     testimonialId: string,
