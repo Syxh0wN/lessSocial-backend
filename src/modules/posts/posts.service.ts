@@ -58,7 +58,7 @@ export class PostsService {
     });
   }
 
-  public async findById(postId: string) {
+  public async findById(postId: string, viewerUserId?: string) {
     const post = await this.prismaService.post.findUnique({
       where: { id: postId },
       include: {
@@ -79,6 +79,7 @@ export class PostsService {
           include: {
             user: {
               select: {
+                id: true,
                 username: true,
               },
             },
@@ -123,7 +124,37 @@ export class PostsService {
     if (!post) {
       throw new NotFoundException('Post not found');
     }
-    return post;
+    if (!viewerUserId) {
+      return post;
+    }
+    const friendships = await this.prismaService.friendship.findMany({
+      where: {
+        OR: [{ userAId: viewerUserId }, { userBId: viewerUserId }],
+      },
+      select: {
+        userAId: true,
+        userBId: true,
+      },
+    });
+    const friendIds = new Set(
+      friendships.map((friendship) =>
+        friendship.userAId === viewerUserId
+          ? friendship.userBId
+          : friendship.userAId,
+      ),
+    );
+    const prioritizedLikes = [...post.likes].sort((firstLike, secondLike) => {
+      const firstIsFriend = friendIds.has(firstLike.user.id) ? 1 : 0;
+      const secondIsFriend = friendIds.has(secondLike.user.id) ? 1 : 0;
+      if (firstIsFriend !== secondIsFriend) {
+        return secondIsFriend - firstIsFriend;
+      }
+      return firstLike.user.username.localeCompare(secondLike.user.username);
+    });
+    return {
+      ...post,
+      likes: prioritizedLikes,
+    };
   }
 
   public async like(postId: string, userId: string) {
